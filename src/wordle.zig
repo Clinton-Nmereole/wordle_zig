@@ -1,7 +1,8 @@
 const std = @import("std");
 const print = std.debug.print;
 
-const wordle_grid = [5][5]?u8{
+const wordle_grid = [6][5]?u8{
+    .{null} ** 5,
     .{null} ** 5,
     .{null} ** 5,
     .{null} ** 5,
