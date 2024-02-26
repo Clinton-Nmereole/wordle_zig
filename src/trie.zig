@@ -3,12 +3,12 @@ const print = std.debug.print;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const gpa_allocator = gpa.allocator();
 
-const TrieNode = struct {
+pub const TrieNode = struct {
     children: [26]?*TrieNode = [_]?*TrieNode{null} ** 26,
     is_word: bool = false,
 };
 
-const Trie = struct {
+pub const Trie = struct {
     const Self = @This();
     root: ?*TrieNode = null,
 

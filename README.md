@@ -7,4 +7,4 @@ Wordle is a web-based word game where players have six attempts to guess a five-
 ## Naive Implementation
 1. Download a wordle dictionary containing most of the five-letter words used in wordle.
 2. Make a Trie data structure that can be used to store the words from the dictionary.txt file
-3. Make a wordle board by making a 6x5 array of nullable u8 values.
+3. Make a wordle board by making a 6x5 array of nullable "Cell" values. A Cell is a struct that holds a nullable enum color and a nullable u8 value, both of which are initialized to null.
