@@ -1,16 +1,8 @@
 const std = @import("std");
 const print = std.debug.print;
+const testing = std.testing;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const gpa_allocator = gpa.allocator();
-
-pub fn main() !void {
-    var trie = Trie{ .root = null };
-    try trie.insert("hello", gpa_allocator);
-    try trie.insert("hi", gpa_allocator);
-    var word: []const u8 = "hello";
-    //try trie.insert("cat", gpa_allocator);
-    print("search for the word {s}: {}\n", .{ word, trie.search(word) });
-}
+pub const gpa_allocator = gpa.allocator();
 
 pub const TrieNode = struct {
     children: [26]?*TrieNode = [_]?*TrieNode{null} ** 26,
@@ -63,3 +55,13 @@ pub const Trie = struct {
         return node.?.is_word;
     }
 };
+
+test "Trie test" {
+    var trie = Trie{ .root = null };
+    defer trie.deinit(testing.allocator);
+    try trie.insert("hello", testing.allocator);
+    try trie.insert("hi", testing.allocator);
+    var word: []const u8 = "hello";
+    //try trie.insert("cat", gpa_allocator);
+    try testing.expectEqual(true, trie.search(word));
+}

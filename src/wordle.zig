@@ -20,6 +20,7 @@ pub fn start_game() !void {
         //print("The type of guess: {any}\n", .{@TypeOf(guess)});
         //print("guess letter at 0: {any}\n", .{guess[0]});
         if (std.mem.eql(u8, guess, winning_word)) {
+            print("\n", .{});
             print("You win!\n", .{});
             break;
         } else {
@@ -43,7 +44,12 @@ pub fn start_game() !void {
             }
         }
     }
-    print("This is the wordle grid: {any}\n", .{wordle_grid});
+    print("\n", .{});
+    print("Game over!\n", .{});
+    print("\n", .{});
+    print("The word was: {s}\n", .{winning_word});
+    print("\n", .{});
+    print("This is your wordle grid: {any}\n", .{wordle_grid});
 }
 
 pub fn load_dictionary() !Trie {
@@ -69,7 +75,7 @@ pub fn make_guesses(buf: []u8) ![]const u8 {
     var reader = std.io.getStdIn().reader();
     //var buf: [1024]u8 = undefined;
     const user_guess = try reader.readUntilDelimiter(buf, '\n');
-    print("Your guess: {any}\n", .{user_guess});
+    print("Your guess: {s}\n", .{user_guess});
     return user_guess;
 }
 
