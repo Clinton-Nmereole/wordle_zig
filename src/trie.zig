@@ -36,7 +36,7 @@ pub const Trie = struct {
         var node = self.root;
         for (word) |char| {
             if (node.?.children[char_to_Index(char)] == null) {
-                var new_node = try allocator.create(TrieNode);
+                const new_node = try allocator.create(TrieNode);
                 new_node.* = TrieNode{};
                 node.?.children[char_to_Index(char)] = new_node;
             }
@@ -61,7 +61,7 @@ test "Trie test" {
     defer trie.deinit(testing.allocator);
     try trie.insert("hello", testing.allocator);
     try trie.insert("hi", testing.allocator);
-    var word: []const u8 = "hello";
+    const word: []const u8 = "hello";
     //try trie.insert("cat", gpa_allocator);
     try testing.expectEqual(true, trie.search(word));
 }

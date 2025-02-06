@@ -1,5 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
+const rand = std.crypto.random;
 const fs = std.fs;
 const Trie = @import("trie.zig").Trie;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -9,16 +10,16 @@ pub fn main() !void {
     try start_game();
 }
 
-pub fn start_game() !void {
+pub fn start_game(winning_word: []const u8) !void {
+    print("Welcome to Wordle!\n", .{});
+    print("The winning word is: {s}\n", .{winning_word});
     var trie = try load_dictionary();
-    var buf: [1024]u8 = undefined;
+    var buf: [4096]u8 = undefined;
     defer trie.deinit(gpa_allocator);
     var n: usize = 0;
     while (n < 6) : (n += 1) {
         print("Make guess {d}: ", .{n + 1});
-        var guess = try make_guesses(&buf);
-        //print("The type of guess: {any}\n", .{@TypeOf(guess)});
-        //print("guess letter at 0: {any}\n", .{guess[0]});
+        const guess = try make_guesses(&buf);
         if (std.mem.eql(u8, guess, winning_word)) {
             print("\n", .{});
             print("You win!\n", .{});
@@ -54,7 +55,7 @@ pub fn start_game() !void {
 
 pub fn load_dictionary() !Trie {
     var trie = Trie{};
-    const file = try fs.cwd().openFile("/home/clinton/Developer/Zig_projects/wordle/dictionary.txt", .{});
+    const file = try fs.cwd().openFile("./dictionary.txt", .{});
     defer file.close();
 
     var buffered_reader = std.io.bufferedReader(file.reader());
@@ -98,6 +99,26 @@ pub fn valueInArray(value: u8, array: []const u8) bool {
     return false;
 }
 
+pub fn readLineAt(file_path: []const u8, line_num: u32, allocator: std.mem.Allocator) ![]u8 {
+    var file = try fs.cwd().openFile(file_path, .{});
+    defer file.close();
+
+    var buffered_reader = std.io.bufferedReader(file.reader());
+    var reader = buffered_reader.reader();
+    var line_count: u32 = 0;
+
+    const buffer: []u8 = try allocator.alloc(u8, 4096);
+
+    while (try reader.readUntilDelimiterOrEof(buffer, '\n')) |line| {
+        line_count += 1;
+        if (line_count == line_num) {
+            return line;
+        }
+    }
+
+    return error.FileLineOutOfBounds;
+}
+
 pub const color = enum {
     green,
     yellow,
@@ -107,6 +128,22 @@ pub const color = enum {
 pub const Cell = struct {
     value: ?u8 = null,
     color: ?color = null,
+
+    pub fn format(self: Cell, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
+        if (self.color == color.green) {
+            try writer.print("Wordle.Cell{{\x1b[32m{c}\x1b[0m}}'", .{self.value.?});
+        } else if (self.color == color.yellow) {
+            try writer.print("Wordle.Cell{{\x1b[33m{c}\x1b[0m}}", .{self.value.?});
+        } else if (self.color == color.gray) {
+            try writer.print("Wordle.Cell{{\x1b[90m{c}\x1b[0m}}", .{self.value.?});
+        }
+    }
 };
 
-pub var winning_word: *const [5]u8 = "sunny";
+pub fn set_winning_word(file_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
+    const random_line = rand.intRangeAtMost(u32, 0, 2315);
+    const line = try readLineAt(file_path, random_line, allocator);
+    return line;
+}
