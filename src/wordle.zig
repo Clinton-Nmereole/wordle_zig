@@ -14,12 +14,13 @@ pub fn start_game(winning_word: []const u8) !void {
     print("Welcome to Wordle!\n", .{});
     print("The winning word is: {s}\n", .{winning_word});
     var trie = try load_dictionary();
-    var buf: [4096]u8 = undefined;
+    var buf: []u8 = undefined;
+    buf = try gpa_allocator.alloc(u8, 4096);
     defer trie.deinit(gpa_allocator);
     var n: usize = 0;
     while (n < 6) : (n += 1) {
         print("Make guess {d}: ", .{n + 1});
-        const guess = try make_guesses(&buf);
+        const guess = try make_guesses(buf);
         if (std.mem.eql(u8, guess, winning_word)) {
             print("\n", .{});
             print("You win!\n", .{});
@@ -58,24 +59,41 @@ pub fn load_dictionary() !Trie {
     const file = try fs.cwd().openFile("./dictionary.txt", .{});
     defer file.close();
 
-    var buffered_reader = std.io.bufferedReader(file.reader());
-    const reader = buffered_reader.reader();
+    var buf: []u8 = undefined;
+    buf = try gpa_allocator.alloc(u8, 4096);
+    var file_reader = file.reader(buf[0..]);
+    const reader = &file_reader.interface;
 
-    var buf: [2048]u8 = undefined;
-
-    while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    while (reader.takeDelimiterExclusive('\n')) |line| {
         if (line.len == 5) {
             try trie.insert(line, gpa_allocator);
+        }
+    } else |err| {
+        if (err == error.EndOfStream) {
+            //do nothing
+        } else {
+            return err;
         }
     }
     return trie;
 }
 
 pub fn make_guesses(buf: []u8) ![]const u8 {
-    //var n: usize = 0;
-    var reader = std.io.getStdIn().reader();
-    //var buf: [1024]u8 = undefined;
-    const user_guess = try reader.readUntilDelimiter(buf, '\n');
+    // 1. Get the stdin file handle
+    // Note: We use 'var' because reading changes the file state
+    var stdin_file = std.fs.File.stdin();
+
+    // 2. Create your own buffer (e.g., 4KB on the stack)
+    //var buffer: [4096]u8 = undefined;
+
+    // 3. Create the buffered reader wrapper
+    // We pass the slice 'buf[0..]' to be explicit
+    var stdin_reader = stdin_file.reader(buf[0..]);
+
+    // 4. Get the generic interface (*std.Io.Reader)
+    const reader = &stdin_reader.interface;
+    //const stdout = std.fs.File.stdout();
+    const user_guess = try reader.takeDelimiterExclusive('\n');
     print("Your guess: {s}\n", .{user_guess});
     return user_guess;
 }
@@ -102,17 +120,24 @@ pub fn valueInArray(value: u8, array: []const u8) bool {
 pub fn readLineAt(file_path: []const u8, line_num: u32, allocator: std.mem.Allocator) ![]u8 {
     var file = try fs.cwd().openFile(file_path, .{});
     defer file.close();
+    var buffer: []u8 = undefined;
+    buffer = try allocator.alloc(u8, 4096);
+    var file_reader = file.reader(buffer[0..]);
 
-    var buffered_reader = std.io.bufferedReader(file.reader());
-    var reader = buffered_reader.reader();
+    //var buffered_reader = std.Io.Reader.buffered(file_reader);
+    const reader = &file_reader.interface;
     var line_count: u32 = 0;
 
-    const buffer: []u8 = try allocator.alloc(u8, 4096);
-
-    while (try reader.readUntilDelimiterOrEof(buffer, '\n')) |line| {
+    while (reader.takeDelimiterExclusive('\n')) |line| {
         line_count += 1;
         if (line_count == line_num) {
             return line;
+        }
+    } else |err| {
+        if (err == error.EndOfStream) {
+            //return nothing
+        } else {
+            return err;
         }
     }
 
