@@ -17,9 +17,9 @@ pub fn start_game(winning_word: []const u8) !void {
     var buf: []u8 = undefined;
     buf = try gpa_allocator.alloc(u8, 4096);
     defer trie.deinit(gpa_allocator);
-    var n: usize = 0;
-    while (n < 6) : (n += 1) {
-        print("Make guess {d}: ", .{n + 1});
+    var n: usize = 1;
+    while (n < 7) : (n += 1) {
+        print("Make guess {d}: ", .{n});
         const guess = try make_guesses(buf);
         if (std.mem.eql(u8, guess, winning_word)) {
             print("\n", .{});
@@ -27,9 +27,13 @@ pub fn start_game(winning_word: []const u8) !void {
             break;
         } else {
             if (guess.len != 5) {
-                print("Invalid guess\n", .{});
+                print("Invalid guess, word guessed is not a 5 letter word! Try Again\n", .{});
+                n -= 1;
+                continue;
             } else if (!trie.search(guess)) {
                 print("Not a wordle word\n", .{});
+                n -= 1;
+                continue;
             } else {
                 for (guess, 0..) |char, i| {
                     if (char == winning_word[i]) {
